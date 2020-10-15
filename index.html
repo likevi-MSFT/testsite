@@ -1,1 +1,35 @@
-<h1>hi</h1>
+<head>
+  <script src='https://unpkg.com/timelines-chart'></script>
+</head>
+
+<body>
+hi
+
+<script>
+  const data = [
+    {
+        group: "net sm",
+        data: [
+            {
+                label: "state",
+                data: [
+                    {
+                        timeRange: [new Date("2020-10-15 00:37:55.5857597"),new Date("2020-10-15 00:37:58.5857597")],
+                        val: "unk"
+                    },
+                    {
+                        timeRange: [new Date("2020-10-15 00:38:00.0635911"),new Date("2020-10-15 00:38:00.0663142")],
+                        val: "set"
+                    }
+                ]
+            }
+        ]
+    }
+];
+
+  TimelinesChart()(document.body)
+      .zScaleLabel('some scale value')
+      .zQualitative(false)
+      .data(data);
+</script>
+</body>
