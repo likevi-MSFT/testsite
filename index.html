@@ -3,33 +3,144 @@
 </head>
 
 <body>
-hi
 
+<div id="chart">
+  
+</div>
+<div id="inputform">
+  <textarea id="data" rows="30" cols="100"/>
+  <input type="button" value="Parse" onclick="createChart()">
+</div>
 <script>
-  const data = [
-    {
-        group: "net sm",
-        data: [
-            {
-                label: "state",
-                data: [
-                    {
-                        timeRange: [new Date("2020-10-15 00:37:55.5857597"),new Date("2020-10-15 00:37:58.5857597")],
-                        val: "unk"
-                    },
-                    {
-                        timeRange: [new Date("2020-10-15 00:38:00.0635911"),new Date("2020-10-15 00:38:00.0663142")],
-                        val: "set"
-                    }
-                ]
-            }
-        ]
-    }
-];
+function createChart() {
+    var outdata2 = document.getElementById('inputform').value;
 
-  TimelinesChart()(document.body)
-      .zScaleLabel('some scale value')
-      .zQualitative(true)
-      .data(data);
+    var actors = {}
+
+    outdata2.forEach(event =>
+    {
+        if (!actors.hasOwnProperty(event.resourceId))
+        {
+            actors[event.resourceId] = [];
+        }
+
+        if (event.duration == null) {
+            newEvent = JSON.parse(JSON.stringify(event))
+            newEvent.TIMESTAMP = new Date(event.TIMESTAMP)
+            actors[newEvent.resourceId].push(newEvent)
+        }
+        else
+        {
+            startEvent = JSON.parse(JSON.stringify(event))
+            startEvent.TIMESTAMP = new Date(new Date(event.TIMESTAMP).getTime() - Math.round(event.duration * 1000))
+            startEvent.eventName = "CallStarted"
+            endEvent = JSON.parse(JSON.stringify(event))
+            endEvent.eventName = "CallEnded"
+            endEvent.TIMESTAMP = new Date(event.TIMESTAMP)
+            actors[startEvent.resourceId].push(startEvent)
+            actors[endEvent.resourceId].push(endEvent)
+        }
+    });
+
+    var finalData = []
+    Object.keys(actors).forEach(actorKey =>
+    {
+        var spans = {}
+        var states = []
+        var tasks = []
+        var calls = []
+
+        var actor = actors[actorKey]
+        actor.forEach(entry => {
+            if(entry.TaskName.includes("StateEnterExitEvent"))
+            {
+                var spanKey = entry.TaskName + ":" + entry.state
+
+                if (entry.taskName1 == "StateEnter")
+                {
+                    spans[spanKey] = entry
+                }
+                else if (entry.taskName1 == "StateExit")
+                {
+                    if (spans.hasOwnProperty(spanKey))
+                    {
+                        var data = {
+                            timeRange: [spans[spanKey].TIMESTAMP, entry.TIMESTAMP],
+                            val: entry.state
+                        }
+
+                        states.push(JSON.parse(JSON.stringify(data)))
+                    }
+                }
+            }
+            else if (entry.TaskName.includes("TaskEvent"))
+            {
+                var spanKey = entry.TaskName + ":" + entry.taskName1
+
+                if (entry.eventName == "Started")
+                {
+                    spans[spanKey] = entry
+                }
+                else if (entry.eventName == "Success" || entry.eventName == "RetryLimitReached")
+                {
+                    if (spans.hasOwnProperty(spanKey))
+                    {
+                        var data = {
+                            timeRange: [spans[spanKey].TIMESTAMP, entry.TIMESTAMP],
+                            val: entry.taskName1
+                        }
+
+                        tasks.push(JSON.parse(JSON.stringify(data)))
+                    }
+                }
+            }
+            else if (entry.TaskName.includes("Duration"))
+            {
+                var spanKey = entry.TaskName + ":" + entry.taskName1
+                if (entry.eventName == "CallStarted")
+                {
+                    spans[spanKey] = entry
+                }
+                else if (entry.eventName == "CallEnded")
+                {
+                    if (spans.hasOwnProperty(spanKey))
+                    {
+                        var data = {
+                            timeRange: [spans[spanKey].TIMESTAMP, entry.TIMESTAMP],
+                            val: entry.taskName1
+                        }
+
+                        calls.push(JSON.parse(JSON.stringify(data)))
+                    }
+                }
+            }
+        })
+
+        var group = {
+            group: actorKey,
+            data: [
+                {
+                    label: "state",
+                    data: states
+                },
+                {
+                    label: "task",
+                    data: tasks
+                },
+                {
+                    label: "call",
+                    data: calls
+                }
+            ]
+        }
+
+        finalData.push(group)
+    })
+
+    TimelinesChart()(document.getElementById('chart'))
+        .zScaleLabel('some scale value')
+        .zQualitative(true)
+        .data(finalData);
+}
 </script>
 </body>
