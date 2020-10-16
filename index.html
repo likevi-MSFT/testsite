@@ -8,13 +8,13 @@
   
 </div>
 <form id="inputform">
-  <textarea id="data" rows="30" cols="100">Replace with logs</textarea>
+  <textarea id="data" rows="30" cols="100">Replace with logs.</textarea>
   <br>
   <input type="button" value="Parse" onclick="createChart()">
 </form>
 <script>
 function createChart() {
-    var outdata2 = document.getElementById('data').value;
+    var outdata2 = JSON.parse(document.getElementById('data').value);
 
     var actors = {}
 
