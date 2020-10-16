@@ -9,11 +9,12 @@
 </div>
 <form id="inputform">
   <textarea id="data" rows="30" cols="100">Replace with logs</textarea>
+  <br>
   <input type="button" value="Parse" onclick="createChart()">
 </form>
 <script>
 function createChart() {
-    var outdata2 = document.getElementById('inputform').value;
+    var outdata2 = document.getElementById('data').value;
 
     var actors = {}
 
